@@ -24,7 +24,7 @@
 
 ```bash
 cd /mnt/ssd/lian/给claudecode/v10_baseline_conpoff
-CUDA_VISIBLE_DEVICES=1 python3 train_conp_v6_0415.py --config config.yaml
+CUDA_VISIBLE_DEVICES=1 python3 train_conp.py --config config.yaml
 ```
 
 训练配置要点：
@@ -151,7 +151,7 @@ python3 评估/search_offset_threshold_and_predict.py \
 
 ## 代码位置
 
-- `train_conp_v6_0415.py`：训练脚本，包含训练内阈值搜索与 test monitor
+- `train_conp.py`：训练脚本，包含训练内阈值搜索与 test monitor
 - `predict_to_json.py`：两阈值 baseline 推理（`onset/frame`）
 - `predict_to_json_offset.py`：三阈值 offset-aware 推理（`onset/frame/offset`）
 - `评估/search_threshold_v2.py`：独立 `val40` 搜 `onset/frame`
