@@ -19,6 +19,15 @@ run/20260422_201016_COnP/*
 !run/20260422_201016_COnP/test_monitor.txt
 !run/20260422_201016_COnP/threshold_search_test_best_model_epoch0316.tsv
 !run/20260422_201016_COnP/pred_test_best_model_epoch0316_best_grid.json
+!run/20260422_201016_COnP/threshold_search_v2_epoch0128/
+!run/20260422_201016_COnP/threshold_search_v2_epoch0128/val_threshold_search.tsv
+!run/20260422_201016_COnP/threshold_search_v2_epoch0128/selected_thresholds.tsv
+!run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/
+!run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/run.log
+!run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/val_offset_threshold_search.tsv
+!run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/selected_offset_threshold.tsv
+!run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/test_with_selected_offset_threshold.tsv
+!run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/pred_test_offset_aware.json
 !run/20260422_201016_COnP/logs/
 run/20260422_201016_COnP/logs/*
 !run/20260422_201016_COnP/logs/train_stdout.log

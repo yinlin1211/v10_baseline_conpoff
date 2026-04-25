@@ -6,8 +6,8 @@
 
 - 模型 GAP：当前代码与现有 checkpoint 固定使用 `S.mean(dim=-1)`；如果要尝试 `sum + LayerNorm`，需要改模型并重新训练。
 - 数据划分：`train=1-400`，`val=361-400`，`test=401-500`。因此 val 与 train 有 40 首重叠，val 只能作为训练内监控。
-- 当前训练记录对应的最佳权重来自 `run/20260422_201016_COnP/checkpoints/`，但模型权重文件未上传到本仓库。
-- `epoch0128` 是后续 offset-aware 推理时反复使用的一版 checkpoint；本仓库保留了对应结果和命令说明，但不附带 `.pt` 文件。
+- 当前 `run/20260422_201016_COnP/checkpoints/best_model.pt` 是 epoch 524，按 val `COnP` 保存。
+- `epoch0128` checkpoint 是本仓库后续 offset-aware 推理时反复使用的一版：`run/20260422_201016_COnP/checkpoints/best_model_epoch0128_COnP0.7958.pt`
 - `test_monitor.txt` 使用训练脚本的全曲 chunk 评估；`predict_to_json.py` / `predict_to_json_offset.py` 使用 50% overlap 推理，因此两者 test 数值不完全等价。
 
 ## 代码入口
@@ -20,12 +20,55 @@
 - `evaluate_github.py`：原论文兼容评测脚本。
 - `config.yaml`：当前 baseline 配置。
 
-## 上传范围
+## 完整实验口径
 
-- 已上传：代码、配置、划分文件、评测脚本、结果 JSON、训练监控表、阈值搜索表、训练 stdout 日志。
-- 未上传：模型权重 `.pt` 文件。
+当前最完整、最独立的后处理实验流程是两阶段 val 搜索：
 
-## 阈值是怎么来的
+1. 在 `val=361-400` 上独立搜索 `onset_thresh x frame_thresh`
+2. 固定第一阶段选出的 `onset/frame`，继续只在 `val` 上搜索 `offset_thresh`
+3. 最后只用 val 选出的三阈值，在 `test=401-500` 上评测一次
+
+这套流程的代码已经单独放在 `评估/` 目录：
+
+- `评估/search_threshold_v2.py`
+- `评估/search_offset_threshold_and_predict.py`
+
+### 当前完整实验结果
+
+第一阶段独立 val40 搜索得到：
+
+- `onset=0.45`
+- `frame=0.50`
+
+对应结果：
+
+- `val COn=0.817416`
+- `val COnP=0.802107`
+- `val COnPOff=0.529928`
+- `test COn=0.804001`
+- `test COnP=0.777067`
+- `test COnPOff=0.482631`
+
+第二阶段固定 `onset=0.45, frame=0.50`，继续在 val 上搜索 `offset`，得到：
+
+- `offset=0.10`
+
+最终 test 结果：
+
+- `COn=0.803172`
+- `COnP=0.776425`
+- `COnPOff=0.592620`
+
+对应产物：
+
+- `run/20260422_201016_COnP/threshold_search_v2_epoch0128/val_threshold_search.tsv`
+- `run/20260422_201016_COnP/threshold_search_v2_epoch0128/selected_thresholds.tsv`
+- `run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/val_offset_threshold_search.tsv`
+- `run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/selected_offset_threshold.tsv`
+- `run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/test_with_selected_offset_threshold.tsv`
+- `run/20260422_201016_COnP/offset_search_epoch0128_best_val_conp/pred_test_offset_aware.json`
+
+## 训练内阈值与独立搜索的区别
 
 ### 1. `onset=0.50`, `frame=0.40`
 
@@ -58,9 +101,16 @@ CUDA_VISIBLE_DEVICES=1 python3 train_conp_v6_0415.py --config config.yaml
   - `onset_thresh=0.50`
   - `frame_thresh=0.40`
 
-### 2. `offset=0.20`
+这说明训练过程中确实做过 val40 搜索，但训练内记录下来的 best threshold 与独立评估脚本重新搜索出来的 best threshold 不完全相同：
 
-当前仓库里没有留下单独的 val offset 搜索表，但保留了 offset-aware 推理结果文件。现有证据表明，后处理阶段是固定 `epoch0128 + onset=0.50 + frame=0.40`，再手动试不同 `offset_thresh` 得到的。
+- 训练内记录：`onset=0.50`, `frame=0.40`
+- 独立评估脚本重搜：`onset=0.45`, `frame=0.50`
+
+因此后续对外报告时，优先建议使用独立脚本那套完整实验口径。
+
+### 2. 历史手动 offset 对照
+
+在补齐独立 offset 搜索脚本之前，仓库里曾保留过两份手动 offset 对照结果。它们现在仍然保留，方便对比，但不再作为“最完整实验”的主结果。
 
 使用的推理脚本：
 
@@ -133,13 +183,14 @@ python3 evaluate_github.py data/MIR-ST500_corrected.json <pred.json> 0.05
 
 ## 当前推荐结果
 
-如果按“当前仓库里已有代码和文件，能明确复现并解释来源”的标准，推荐保留下面这组说明：
+如果按“当前仓库里已有代码、结果表和完整 val 搜索流程”的标准，当前推荐报告这一组：
 
-- baseline 两阈值来自训练阶段 val 搜索：`onset=0.50`, `frame=0.40`
-- 后处理 offset-aware 推理基于 `epoch0128` checkpoint
-- 当前已验证的 offset-aware 结果：
-  - `off=0.20`: `COn=0.801662`, `COnP=0.774792`, `COnPOff=0.566972`
-  - `off=0.30`: `COn=0.801525`, `COnP=0.774814`, `COnPOff=0.586965`
+- 第一阶段 val40 搜索：`onset=0.45`, `frame=0.50`
+- 第二阶段 val offset 搜索：`offset=0.10`
+- 最终 test：
+  - `COn=0.803172`
+  - `COnP=0.776425`
+  - `COnPOff=0.592620`
 
 ## 环境与数据依赖
 
@@ -152,11 +203,10 @@ python3 evaluate_github.py data/MIR-ST500_corrected.json <pred.json> 0.05
 
 训练产物保存在 `run/<timestamp>_COnP/` 下。当前主要目录：
 
+- `run/20260422_201016_COnP/checkpoints/best_model.pt`：epoch 524，按 val `COnP` 选择
+- `run/20260422_201016_COnP/checkpoints/best_model_epoch0128_COnP0.7958.pt`：后续 offset-aware 推理常用 checkpoint
 - `run/20260422_201016_COnP/test_monitor.txt`：full test 监控记录
 - `run/20260422_201016_COnP/threshold_search_test_best_model_epoch0316.tsv`：一份 test 阈值网格结果表
-- `run/20260422_201016_COnP/logs/train_stdout.log`：训练日志
-
-说明：`checkpoints/*.pt` 未上传。
 
 ## 评测脚本来源
 
