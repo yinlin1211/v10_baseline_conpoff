@@ -58,13 +58,7 @@ CUDA_VISIBLE_DEVICES=1 python3 train_conp_v6_0415.py --config config.yaml
 
 - `run/20260422_201016_COnP/test_monitor.txt`
 
-在这份监控里：
-
-- `COnP` 最高出现在 `epoch 128`
-- `COn` 最高也出现在 `epoch 128`
-- `COnPOff` 最高出现在 `epoch 200`
-
-`test_monitor.txt` 主要用于观察训练是否已经进入平台期，而不是直接作为后处理阈值搜索的依据。后处理阈值的确定仍然完全在 `val40` 上完成。基于平台期内的候选 checkpoint，我们进一步比较了 `epoch128` 和 `epoch233` 两个模型的效果。其中本 README 后面完整展示的是 `epoch128` 这一组实验流程。
+`test_monitor.txt` 主要用于观察训练是否已经进入平台期，而不是直接作为后处理阈值搜索的依据。后处理阈值的确定仍然完全在 `val40` 上完成。基于平台期内的候选 checkpoint，我们进一步选取了 `epoch128` 和 `epoch233` 两个模型，用来验证模型是否已经到顶。其中本 README 后面完整展示的是 `epoch128` 这一组实验流程。
 
 本 README 当前主结果对应的 checkpoint 是：
 
